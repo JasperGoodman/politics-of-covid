@@ -1,0 +1,494 @@
+---
+title: "Covid Rates vs. Polling"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(rstanarm)
+library(gt)
+library(usmap)
+library(readxl)
+```
+
+```{r}
+polls <- read_csv("data/presidential-polls.csv", col_types = cols(
+  .default = col_character(),
+  question_id = col_double(),
+  poll_id = col_double(),
+  cycle = col_double(),
+  pollster_id = col_double(),
+  sponsor_ids = col_number(),
+  pollster_rating_id = col_double(),
+  sample_size = col_double(),
+  seat_number = col_double(),
+  seat_name = col_logical(),
+  sponsor_candidate = col_logical(),
+  internal = col_logical(),
+  tracking = col_logical(),
+  nationwide_batch = col_logical(),
+  ranked_choice_reallocated = col_logical(),
+  race_id = col_double(),
+  candidate_id = col_double(),
+  pct = col_double()
+)) %>%
+  select(end_date, state, poll_id, candidate_name, candidate_party, pct) %>%
+  rename(date = end_date) %>%
+  mutate(date = mdy(date))
+polls
+
+view(polls)
+
+
+covid_states <- read_csv("data/us-states-covid.csv", col_types = cols(
+  date = col_date(format = ""),
+  state = col_character(),
+  fips = col_character(),
+  cases = col_double(),
+  deaths = col_double(),
+  confirmed_cases = col_double(),
+  confirmed_deaths = col_double(),
+  probable_cases = col_double(),
+  probable_deaths = col_double()
+)) %>%
+  select(date, state, cases, deaths)
+covid_states
+
+covid_wisconsin <- read_csv("data/wisconsin-history.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character(),
+  negativeTestsAntibody = col_logical(),
+  negativeTestsPeopleAntibody = col_logical(),
+  negativeTestsViral = col_logical(),
+  onVentilatorCumulative = col_logical(),
+  positiveTestsAntibody = col_logical(),
+  positiveTestsAntigen = col_logical(),
+  positiveTestsPeopleAntibody = col_logical(),
+  positiveTestsPeopleAntigen = col_logical(),
+  positiveTestsViral = col_logical(),
+  totalTestsAntibody = col_logical(),
+  totalTestsAntigen = col_logical(),
+  totalTestsPeopleAntibody = col_logical(),
+  totalTestsPeopleAntigen = col_logical()
+)) %>%
+  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  mutate(date = ymd(date))
+
+view(covid_wisconsin)
+
+wisconsin_covid_polls <- polls %>%
+  filter(state == "Wisconsin") %>%
+  right_join(covid_wisconsin, by = "date")
+
+view(wisconsin_covid_polls)
+
+
+```
+
+```{r wisconsin}
+wisconsin_covid_polls %>%
+  filter(candidate_party == c("DEM", "REP")) %>%
+  ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
+  geom_point() +
+  geom_smooth() +
+  scale_color_manual(values = c("blue", "red"),
+                     labels = c("Biden", "Trump"),
+                    name = "Candidate") +
+  theme_minimal() +
+  labs(title = "COVID's Correlation with Presidential Polling in Wisconsin",
+       x = "Cases",
+       y = "Polling Percentage")
+         
+```
+
+```{r}
+
+covid_michigan <- read_csv("data/michigan-history.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character(),
+  negativeTestsAntibody = col_logical(),
+  negativeTestsPeopleAntibody = col_logical(),
+  negativeTestsViral = col_logical(),
+  onVentilatorCumulative = col_logical(),
+  positiveTestsAntibody = col_logical(),
+  positiveTestsAntigen = col_logical(),
+  positiveTestsPeopleAntibody = col_logical(),
+  positiveTestsPeopleAntigen = col_logical(),
+  positiveTestsViral = col_logical(),
+  totalTestsAntibody = col_logical(),
+  totalTestsAntigen = col_logical(),
+  totalTestsPeopleAntibody = col_logical(),
+  totalTestsPeopleAntigen = col_logical()
+)) %>%
+  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  mutate(date = ymd(date))
+
+michigan_covid_polls <- polls %>%
+  filter(state == "Michigan") %>%
+  right_join(covid_michigan, by = "date")
+
+michigan_covid_polls %>%
+  filter(candidate_party == c("DEM", "REP")) %>%
+  ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
+  geom_point() +
+  geom_smooth() +
+  scale_color_manual(values = c("blue", "red"),
+                     labels = c("Biden", "Trump"),
+                    name = "Candidate") +
+  theme_minimal() +
+  labs(title = "COVID's Correlation with Presidential Polling in Michigan",
+       x = "Cases",
+       y = "Polling Percentage")
+
+
+```
+
+```{r}
+covid_pennsylvania <- read_csv("data/pennsylvania-history.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character(),
+  negativeTestsAntibody = col_logical(),
+  negativeTestsPeopleAntibody = col_logical(),
+  negativeTestsViral = col_logical(),
+  onVentilatorCumulative = col_logical(),
+  positiveTestsAntibody = col_logical(),
+  positiveTestsAntigen = col_logical(),
+  positiveTestsPeopleAntibody = col_logical(),
+  positiveTestsPeopleAntigen = col_logical(),
+  positiveTestsViral = col_logical(),
+  totalTestsAntibody = col_logical(),
+  totalTestsAntigen = col_logical(),
+  totalTestsPeopleAntibody = col_logical(),
+  totalTestsPeopleAntigen = col_logical()
+)) %>%
+  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  mutate(date = ymd(date))
+
+pennsylvania_covid_polls <- polls %>%
+  filter(state == "Pennsylvania") %>%
+  right_join(covid_pennsylvania, by = "date")
+
+pennsylvania_covid_polls %>%
+  filter(candidate_party == c("DEM", "REP")) %>%
+  ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
+  geom_point() +
+  geom_smooth() +
+  scale_color_manual(values = c("blue", "red"),
+                     labels = c("Biden", "Trump"),
+                    name = "Candidate") +
+  theme_minimal() +
+  labs(title = "COVID's Correlation with Presidential Polling in Pennsylvania",
+       x = "Cases",
+       y = "Polling Percentage")
+
+```
+
+```{r}
+
+covid_arizona <- read_csv("data/arizona-history.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character(),
+  negativeTestsAntibody = col_logical(),
+  negativeTestsPeopleAntibody = col_logical(),
+  negativeTestsViral = col_logical(),
+  onVentilatorCumulative = col_logical(),
+  positiveTestsAntibody = col_logical(),
+  positiveTestsAntigen = col_logical(),
+  positiveTestsPeopleAntibody = col_logical(),
+  positiveTestsPeopleAntigen = col_logical(),
+  positiveTestsViral = col_logical(),
+  totalTestsAntibody = col_logical(),
+  totalTestsAntigen = col_logical(),
+  totalTestsPeopleAntibody = col_logical(),
+  totalTestsPeopleAntigen = col_logical()
+)) %>%
+  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  mutate(date = ymd(date))
+
+arizona_covid_polls <- polls %>%
+  filter(state == "Arizona") %>%
+  right_join(covid_arizona, by = "date")
+
+arizona_covid_polls %>%
+  filter(candidate_party == c("DEM", "REP")) %>%
+  ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
+  geom_point() +
+  geom_smooth() +
+  scale_color_manual(values = c("blue", "red"),
+                     labels = c("Biden", "Trump"),
+                    name = "Candidate") +
+  theme_minimal() +
+  labs(title = "COVID's Correlation with Presidential Polling in Arizona",
+       x = "Cases",
+       y = "Polling Percentage")
+```
+
+```{r}
+covid_georgia <- read_csv("data/georgia-history.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character(),
+  negativeTestsAntibody = col_logical(),
+  negativeTestsPeopleAntibody = col_logical(),
+  negativeTestsViral = col_logical(),
+  onVentilatorCumulative = col_logical(),
+  positiveTestsAntibody = col_logical(),
+  positiveTestsAntigen = col_logical(),
+  positiveTestsPeopleAntibody = col_logical(),
+  positiveTestsPeopleAntigen = col_logical(),
+  positiveTestsViral = col_logical(),
+  totalTestsAntibody = col_logical(),
+  totalTestsAntigen = col_logical(),
+  totalTestsPeopleAntibody = col_logical(),
+  totalTestsPeopleAntigen = col_logical()
+)) %>%
+  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  mutate(date = ymd(date))
+
+georgia_covid_polls <- polls %>%
+  filter(state == "Georgia") %>%
+  right_join(covid_georgia, by = "date")
+
+georgia_covid_polls %>%
+  filter(candidate_party == c("DEM", "REP")) %>%
+  ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
+  geom_point() +
+  geom_smooth() +
+  scale_color_manual(values = c("blue", "red"),
+                     labels = c("Biden", "Trump"),
+                    name = "Candidate") +
+  theme_minimal() +
+  labs(title = "COVID's Correlation with Presidential Polling in Georgia",
+       x = "Cases",
+       y = "Polling Percentage")
+
+```
+
+```{r}
+covid_national <- read_csv("data/national-history.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character(),
+  negativeTestsAntibody = col_logical(),
+  negativeTestsPeopleAntibody = col_logical(),
+  negativeTestsViral = col_logical(),
+  onVentilatorCumulative = col_logical(),
+  positiveTestsAntibody = col_logical(),
+  positiveTestsAntigen = col_logical(),
+  positiveTestsPeopleAntibody = col_logical(),
+  positiveTestsPeopleAntigen = col_logical(),
+  positiveTestsViral = col_logical(),
+  totalTestsAntibody = col_logical(),
+  totalTestsAntigen = col_logical(),
+  totalTestsPeopleAntibody = col_logical(),
+  totalTestsPeopleAntigen = col_logical()
+)) %>%
+  select(date, death, deathIncrease, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  mutate(date = ymd(date))
+
+national_covid_polls <- polls %>%
+  right_join(covid_national, by = "date")
+
+national_covid_polls %>%
+  filter(candidate_party == c("DEM", "REP")) %>%
+  ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
+  geom_point() +
+  geom_smooth() +
+  scale_color_manual(values = c("blue", "red"),
+                     labels = c("Biden", "Trump"),
+                    name = "Candidate") +
+  theme_minimal() +
+  labs(title = "COVID's Correlation with Presidential Polling in the US",
+       x = "Cases",
+       y = "Polling Percentage")
+```
+
+```{r}
+
+covid_county <- read_csv("data/us-counties-covid.csv", col_types = cols(
+  date = col_date(format = ""),
+  county = col_character(),
+  state = col_character(),
+  fips = col_character(),
+  cases = col_double(),
+  deaths = col_double(),
+  confirmed_cases = col_double(),
+  confirmed_deaths = col_double(),
+  probable_cases = col_double(),
+  probable_deaths = col_double()
+))
+
+
+results <- read_csv("data/presidential-results.csv", col_types = cols(
+  .default = col_double(),
+  fips = col_character(),
+  name = col_character(),
+  absentee_method = col_character(),
+  eevp_value = col_character(),
+  eevp_display = col_character(),
+  eevp_source = col_character(),
+  absentee_count_progress = col_character(),
+  absentee_outstanding = col_logical(),
+  provisional_outstanding = col_logical(),
+  provisional_count_progress = col_logical(),
+  last_updated = col_datetime(format = ""),
+  leader_margin_display = col_character(),
+  leader_margin_name_display = col_character(),
+  leader_party_id = col_character(),
+  state = col_character(),
+  retrieved_time = col_datetime(format = ""),
+  results_kingr = col_logical(),
+  results_absentee_kingr = col_logical(),
+  results_segalj = col_logical(),
+  results_absentee_segalj = col_logical()
+  # ... with 36 more columns)
+)) %>%
+    rename(county = name) %>%
+  select(fips, county, votes, absentee_votes, results_trumpd, results_bidenj, results_absentee_trumpd, results_absentee_bidenj, leader_party_id, leader_margin_display, margin2020, margin2016, votes2016, state) %>%
+  rename(biden_votes = results_bidenj) %>%
+  rename(trump_votes = results_trumpd)
+
+pop <- read_csv("data/PopulationEstimates.csv", col_types = cols(
+  .default = col_number(),
+  FIPStxt = col_character(),
+  State = col_character(),
+  Area_Name = col_character(),
+  `Rural-urban_Continuum Code_2003` = col_double(),
+  `Rural-urban_Continuum Code_2013` = col_double(),
+  Urban_Influence_Code_2003 = col_double(),
+  Urban_Influence_Code_2013 = col_double(),
+  Economic_typology_2015 = col_double(),
+  RESIDUAL_2010 = col_double(),
+  RESIDUAL_2011 = col_double(),
+  RESIDUAL_2016 = col_double(),
+  RESIDUAL_2017 = col_double(),
+  RESIDUAL_2018 = col_double(),
+  RESIDUAL_2019 = col_double(),
+  R_birth_2011 = col_double(),
+  R_birth_2012 = col_double(),
+  R_birth_2013 = col_double(),
+  R_birth_2014 = col_double(),
+  R_birth_2015 = col_double(),
+  R_birth_2016 = col_double()
+  # ... with 48 more columns
+)) %>%
+  rename(fips = FIPStxt) %>%
+  rename(population = POP_ESTIMATE_2019) %>%
+  select(fips, population)
+
+
+covid_results <- results %>%
+  right_join(covid_county, by = "fips")
+  
+covid_results <- covid_results %>%
+  full_join(pop, by = "fips") %>%
+  mutate(cases_per_capita = cases / population)
+
+view(covid_results)
+
+stan2 <- stan_glm(formula = biden_votes ~ cases_per_capita,
+                  data = covid_results,
+                  refresh = 0)
+stan2
+
+```
+
+```{r}
+
+regression <- tibble(Coefficient = 8.1,
+                     Intercept = 1717.4)
+                     gt(regression)
+
+```
+
+
+
+```{r}
+
+stan <- stan_glm(data = results,
+                 formula = absentee_votes ~ results_bidenj - 1,
+                 refresh = 0)
+stan
+
+```
+
+```{r}
+
+biden_absentee_stan <- stan_glm(data = results,
+                 formula = absentee_votes ~ results_absentee_bidenj,
+                 refresh = 0) %>%
+  as.tibble() %>%
+ggplot(aes(x = select_variable, fill = year)) + 
+  geom_histogram(aes(y = after_stat(count / sum(count))), 
+ggplot(data = post_predictions, aes(x = select_variable, fill = year)) + 
+  alpha = 0.65, 
+bins = 100, 
+color = "white", 
+position = "identity") + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  labs(title = "Posterior Probability Distribution", 
+       y = "Probability") + 
+  theme_economist() + 
+  scale_fill_manual(name = "Election Year", 
+                    values = c("royalblue", "gold1"))
+
+
+```
+
+```{r}
+
+map_tibble <- covid_results %>%
+  mutate(biden_pct = (biden_votes / votes) * 100) %>%
+  mutate(trump_pct = (trump_votes / votes) * 100) %>%
+  mutate(diff = biden_pct - trump_pct)
+
+
+  plot_usmap(regions = "counties", values = "leader_party_id", data = map_tibble, 
+             exclude = "AK") +
+    scale_fill_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+    labs(title = "2020 United States Presidential Election Results by County",
+         caption = "Source: The New York Times \n * Denotes Projected Winner")
+  
+```
+
+```{r}
+map_tibble1 <- covid_results %>%
+  mutate(cases1 = log(cases_per_capita + 1))
+  
+  
+  plot_usmap(regions = "counties", values = "cases1", data = map_tibble1, 
+             exclude = "AK") +
+  scale_fill_viridis_c(option = "C") +
+    labs(title = "United States COVID-19 Cases by County",
+         caption = "Source: COVID Tracking Project")
+  
+```
+
+```{r}
+covid_results %>%
+    mutate(biden_pct = (results_bidenj / votes) * 100) %>%
+  mutate(trump_pct = (results_trumpd / votes) * 100) %>%
+  mutate(diff = biden_pct - trump_pct) %>%
+  mutate(trump_flip = case_when(leader_party_id == "republican" & margin2016 < 0 ~ TRUE, TRUE ~ FALSE)) %>%
+  mutate(biden_flip = case_when(leader_party_id == "democrat" & margin2016 > 0 ~ TRUE, TRUE ~ FALSE)) %>%
+filter(biden_flip == TRUE | trump_flip == TRUE) %>%
+#  select(county.x, biden_flip, trump_flip, leader_party_id, margin2016, cases)
+  ggplot(mapping = aes(x = cases, y = margin2020, color = )) +
+  geom_point()
+```
+
