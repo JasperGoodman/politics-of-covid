@@ -288,31 +288,143 @@ pop <- read_csv("data/PopulationEstimates.csv", col_types = cols(
 )) %>%
   rename(fips = FIPStxt) %>%
   rename(population = POP_ESTIMATE_2019) %>%
-  select(fips, population)
+  rename(rucc = `Rural-urban_Continuum Code_2013`) %>%
+  select(fips, population, rucc)
+
+
+education <- read_csv("data/Education.csv", col_types = cols(
+  .default = col_double(),
+  State = col_character(),
+  `Area name` = col_character(),
+  `Less than a high school diploma, 1970` = col_number(),
+  `High school diploma only, 1970` = col_number(),
+  `Some college (1-3 years), 1970` = col_number(),
+  `Four years of college or higher, 1970` = col_number(),
+  `Less than a high school diploma, 1980` = col_number(),
+  `High school diploma only, 1980` = col_number(),
+  `Some college (1-3 years), 1980` = col_number(),
+  `Four years of college or higher, 1980` = col_number(),
+  `Less than a high school diploma, 1990` = col_number(),
+  `High school diploma only, 1990` = col_number(),
+  `Some college or associate's degree, 1990` = col_number(),
+  `Bachelor's degree or higher, 1990` = col_number(),
+  `Less than a high school diploma, 2000` = col_number(),
+  `High school diploma only, 2000` = col_number(),
+  `Some college or associate's degree, 2000` = col_number(),
+  `Bachelor's degree or higher, 2000` = col_number(),
+  `Less than a high school diploma, 2014-18` = col_number(),
+  `High school diploma only, 2014-18` = col_number()
+  # ... with 2 more columns
+)) %>%
+  rename(fips = `FIPS Code`) %>%
+  rename(pct_degree = `Percent of adults with a bachelor's degree or higher, 2014-18`) %>%
+  select(fips, pct_degree)
+
+poverty <- read_csv("data/PovertyEstimates.csv", col_types = cols(
+  .default = col_double(),
+  FIPStxt = col_double(),
+  Stabr = col_character(),
+  Area_name = col_character(),
+  POVALL_2018 = col_number(),
+  CI90LBAll_2018 = col_number(),
+  CI90UBALL_2018 = col_number(),
+  POV017_2018 = col_number(),
+  CI90LB017_2018 = col_number(),
+  CI90UB017_2018 = col_number(),
+  POV517_2018 = col_number(),
+  CI90LB517_2018 = col_number(),
+  CI90UB517_2018 = col_number(),
+  MEDHHINC_2018 = col_number(),
+  CI90LBINC_2018 = col_number(),
+  CI90UBINC_2018 = col_number(),
+  POV04_2018 = col_number(),
+  CI90LB04_2018 = col_number(),
+  CI90UB04_2018 = col_number()
+)) %>%
+  rename(fips = FIPStxt)
+
+
+unemployment <- read_csv("data/Unemployment.csv", col_types = cols(
+  .default = col_number(),
+  FIPStxt = col_double(),
+  Stabr = col_character(),
+  area_name = col_character(),
+  Rural_urban_continuum_code_2013 = col_double(),
+  Urban_influence_code_2013 = col_double(),
+  Metro_2013 = col_double(),
+  Unemployment_rate_2000 = col_double(),
+  Unemployment_rate_2001 = col_double(),
+  Unemployment_rate_2002 = col_double(),
+  Unemployment_rate_2003 = col_double(),
+  Unemployment_rate_2004 = col_double(),
+  Unemployment_rate_2005 = col_double(),
+  Unemployment_rate_2006 = col_double(),
+  Unemployment_rate_2007 = col_double(),
+  Unemployment_rate_2008 = col_double(),
+  Unemployment_rate_2009 = col_double(),
+  Unemployment_rate_2010 = col_double(),
+  Unemployment_rate_2011 = col_double(),
+  Unemployment_rate_2012 = col_double(),
+  Unemployment_rate_2013 = col_double()
+  # ... with 7 more columns
+)) %>%
+  rename(fips = FIPStxt) %>%
+  mutate(unemployment_rate_chg_2000_2019 = Unemployment_rate_2019 - Unemployment_rate_2000) %>%
+  select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019, Unemployment_rate_2000, fips, Median_Household_Income_2018, Med_HH_Income_Percent_of_State_Total_2018)
+
+
+
+results_2016 <- read_csv("data/tidy_data.csv", col_types = cols(
+  .default = col_double(),
+  fips = col_double(),
+  name_16 = col_character(),
+  votes16_jacobp = col_logical(),
+  votes16_whitej = col_logical(),
+  votes16_mooreheadm = col_logical(),
+  votes16_none_of_these_candidates = col_logical(),
+  votes16_duncanr = col_logical(),
+  votes16_skewesp = col_logical(),
+  votes16_giordanir = col_logical(),
+  name_prev = col_character(),
+  ST = col_character(),
+  statecode_prev = col_character(),
+  County = col_character(),
+  State = col_character(),
+  temp_bins = col_character(),
+  lat_bins = col_character(),
+  lon_bins = col_character(),
+  precip_bins = col_character(),
+  elevation_bins = col_character()
+)) %>%
+  select(fips, votes, votes16_trumpd, votes16_clintonh, rep16_frac, dem16_frac, dem08, rep08, dem08_frac, rep08_frac, dem12, rep12, dem12_frac, rep12_frac) %>%
+  rename(trump_votes_16 = votes16_trumpd) %>%
+  rename(clinton_votes_16 = votes16_clintonh) %>%
+  rename(trump_pct_16 = rep16_frac) %>%
+  rename(clinton_pct_16 = dem16_frac) %>%
+  mutate(trump_pct_16 = trump_pct_16 * 100) %>%
+  mutate(clinton_pct_16 = clinton_pct_16 * 100)
 
 
 covid_results <- results %>%
-  right_join(covid_county, by = "fips")
-
-covid_results <- covid_results %>%
-  full_join(pop, by = "fips") %>%
+  right_join(covid_county, by = "fips") %>%
+  right_join(pop, by = "fips") %>%
+  right_join(results_2016, by = "fips") %>%
+  right_join(education, by = "fips") %>%
+  right_join(unemployment, by = "fips") %>%
   mutate(cases_per_capita = cases / population) %>%
-  mutate(deaths_per_capita = deaths / population) %>%
-  mutate(margin_dif = margin2020 - margin2016) %>%
-  mutate(biden_pct = (biden_votes / votes) * 100) %>%
-  mutate(trump_pct = (trump_votes / votes) * 100) %>%
+  mutate(biden_pct = (biden_votes / votes.x) * 100) %>%
+  mutate(trump_pct = (trump_votes / votes.x) * 100) %>%
   mutate(diff = biden_pct - trump_pct) %>%
   mutate(trump_flip = case_when(leader_party_id == "republican" & margin2016 < 0 ~ TRUE, TRUE ~ FALSE)) %>%
   mutate(biden_flip = case_when(leader_party_id == "democrat" & margin2016 > 0 ~ TRUE, TRUE ~ FALSE)) %>%
-  mutate(absentee_prop = absentee_votes / votes)
+  mutate(trump_pct_dif_16_20 = trump_pct - trump_pct_16) %>%
+  mutate(biden_pct_dif_16_20 = biden_pct - clinton_pct_16) %>%
+  mutate(trump_vote_dif_16_20 = trump_votes - trump_votes_16) %>%
+  mutate(cases_per_10000 = cases / (population / 10000)) %>%
+  mutate(deaths_per_100000 = deaths / (population / 100000))
 
 regression <- tibble(tibble(Coefficient = 32.5,
                             Intercept = 2.5))
-
-map_tibble <- covid_results %>%
-  mutate(biden_pct = (biden_votes / votes) * 100) %>%
-  mutate(trump_pct = (trump_votes / votes) * 100) %>%
-  mutate(diff = biden_pct - trump_pct)
 
 map_tibble1 <- covid_results %>%
   mutate(cases1 = log(cases + 1))
@@ -344,6 +456,45 @@ ui <- fluidPage(
              
              mainPanel(plotOutput("county_potus_results")),
              mainPanel(plotOutput("covid_map"))),
+    
+    tabPanel("Trump vs. COVID",
+             titlePanel("How The Virus Affected Electoral Performance"),
+             
+             # Sidebar with a slider input for number of bins 
+             sidebarLayout(
+               sidebarPanel(
+                 radioButtons("variable",
+                             "Select Y Variable:",
+                             c("Change in Trump's Vote Share Since 2016",
+                               "Change in the Democratic Vote Share Since 2016",
+                               "Trump Vote Share 2020",
+                               "Biden Vote Share 2020")),
+               selectInput("state1",
+                           "Select State:",
+                           c("Alabama", "Alaska", "American Samoa", 
+                             "Arizona", 
+                             "Arkansas", "California", "Colorado", 
+                             "Connecticut", "Delaware", "District of Columbia",
+                             "Florida", "Georgia", "Hawaii", "Idaho",
+                             "Illinois", "Indiana", "Iowa", "Kansas",
+                             "Kentucky", "Louisiana", "Maine", "Maryland",
+                             "Massachusetts", "Michigan", "Minnesota", 
+                             "Mississippi", "Missouri", "Montana", "Nebraska",
+                             "Nevada", "New Hampshire", "New Jersey",
+                             "New Mexico", "New York", "North Carolina",
+                             "North Dakota", "Ohio",
+                             "Oklahoma", "Oregon", "Pennsylvania",
+                             "Rhode Island", "South Carolina",
+                             "South Dakota", "Tennessee", "Texas", "Utah",
+                             "Vermont",
+                             "Virginia", "Washington", "West Virginia",
+                             "Wisconsin", "Wyoming"))),
+               
+               # Show a plot of the generated distribution
+               
+               mainPanel(plotOutput("support_v_covid"),
+                         plotOutput("support_v_covid_national"))
+    )),
     
     tabPanel("COVID-Polling Correlation",
              titlePanel("COVID-Polling Correlation"),
@@ -397,6 +548,7 @@ ui <- fluidPage(
            on my GitHub account."))
   )
 )
+
 
 
 # Define server logic required to draw a histogram
@@ -527,6 +679,56 @@ server <- function(input, output) {
     
   })
   
+  output$support_v_covid <- renderPlot({
+    
+    data <- switch(input$variable,
+                   "Change in Trump's Vote Share Since 2016" = covid_results$trump_pct_dif_16_20,
+                   "Change in the Democratic Vote Share Since 2016" = covid_results$biden_pct_dif_16_20,
+                   "Trump Vote Share 2020" = covid_results$trump_pct,
+                   "Biden Vote Share 2020" = covid_results$biden_pct)
+
+                   
+  covid_results %>%
+    filter(state.y == input$state1) %>%
+    ggplot(mapping = aes(x = cases_per_10000,
+                         y = input$variable,
+                         size = population,
+                         color = leader_party_id)) +
+    scale_color_manual(breaks = c("democrat", "republican"),
+                       values = c("blue", "red"),
+                       name = "County Winner",
+                       labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+    geom_jitter() +
+    theme_classic() +
+    labs(title = "COVID-19 Case Rates vs. Selected Variable in Selected State",
+         x = "Cases Per 1,000 Residents by County")
+  
+  })
+  
+  output$support_v_covid_national <- renderPlot({
+    
+  data2 <- switch(input$variable,
+                 "Change in Trump's Vote Share Since 2016" = covid_results$trump_pct_dif_16_20,
+                 "Change in the Democratic Vote Share Since 2016" = covid_results$biden_pct_dif_16_20,
+                 "Trump Vote Share 2020" = covid_results$trump_pct,
+                 "Biden Vote Share 2020" = covid_results$biden_pct)
+  
+  
+  covid_results %>%
+    ggplot(mapping = aes(x = cases_per_10000,
+                         y = input$variable,
+                         size = population,
+                         color = leader_party_id)) +
+    scale_color_manual(breaks = c("democrat", "republican"),
+                       values = c("blue", "red"),
+                       name = "County Winner",
+                       labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+    geom_jitter() +
+    theme_classic() +
+    labs(title = "COVID-19 Case Rates vs. Selected Variable",
+         x = "Cases Per 1,000 Residents by County")
+    
+  })
   
 }
 

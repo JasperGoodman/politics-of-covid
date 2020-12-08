@@ -547,9 +547,11 @@ help <- covid_results %>%
   filter(state.y == "new york")
 
 stan <- stan_glm(data = covid_results,
-                 formula = trump_pct ~ pct_degree + unemployment_rate_chg_2000_2019 + state.x -1,
+                 formula = trump_pct_dif_16_20 ~ ,
                  refresh = 0)
 stan
+
+summary(stan)
 
 #  select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019, Unemployment_rate_2000, fips, Median_Household_Income_2018, Med_HH_Income_Percent_of_State_Total_2018)
 
@@ -558,18 +560,39 @@ stan
 ```{r}
 
 covid_results %>%
-#  filter(state.x == c("michigan", "pennsylvania", "wisconsin", "arizona", "georgia")) %>%
-  ggplot(mapping = aes(x = cases_per_10000, y = trump_pct, size = population, color = state)) +
- # scale_color_manual(breaks = c("democrat", "republican"),
-  #                               values = c("blue", "red"),
-   #                   name = "Winner",
-    #                  labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+  filter(state.y == "XXX") %>%
+  ggplot(mapping = aes(x = cases_per_10000,
+                       y = XXX, size = population,
+                       color = leader_party_id)) +
+  scale_color_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "County Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
   geom_jitter() +
-  theme_classic()
-
+  theme_classic() +
+  labs(title = "COVID-19 Case Rates vs. XXX",
+       x = "Cases Per 1,000 Residents by County",
+       y = "XXX")
 
 
 ```
+
+```{r}
+covid_results %>%
+  ggplot(mapping = aes(x = cases_per_10000,
+                       y = XXX, size = population,
+                       color = leader_party_id)) +
+  scale_color_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "County Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+  geom_jitter() +
+  theme_classic() +
+  labs(title = "COVID-19 Case Rates vs. XXX",
+       x = "Cases Per 1,000 Residents by County",
+       y = "")
+```
+
 
 ```{r}
 
