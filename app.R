@@ -603,9 +603,13 @@ ui <- fluidPage(
              Pandemic and the 2020 U.S. Presidential Election', published by IZA
              Institute of Labor Economics. I sought to create a model that used 
              per capita COVID-19 rates to predict change Trump support from 
-             2016, while controlling for relevant demographic variables. I felt
-             that measuring change in Trump's support from 2016 would be more 
-             telling than smiply looking at support for Trump in 2020,
+             2016, while controlling for relevant demographic variables. The 
+             demographics controlled for in this model are Rural-Urban Continuum
+             Code, a metric from the United States Department of Agriculture's 
+             Economic Research Service, as well as percent of residnets with a 
+             college degree."),
+             p("I feltthat measuring change in Trump's support from 2016 would 
+             be more telling than smiply looking at support for Trump in 2020,
                although the correlations are similar."),
              
 # I used gt_output to include the model here.
@@ -630,13 +634,14 @@ ui <- fluidPage(
 # And, finally, here is my about page!
              
              h3("Goals & Data"),
-             p("The aim of this project is to prive a framework for understanding
-           how COVID-19 impacted the result of the 2020 election. The election 
-           data used in the project comes from The New York Times. The COVID-19
-               data comes from The New York Times, the COVID Tracking Project by
-               The Atlantic, and John's Hopkins University. The population and
-               demographic data used comes from the United States Department of
-               Agriculture's Economic Research Service."),
+             p("The aim of this project is to prive a framework for
+             understanding how COVID-19 impacted the result of the 2020
+             election. The election data used in the project comes from 
+             The New York Times. The COVID-19 data comes from The New York
+             Times, the COVID Tracking Project by The Atlantic, and John's
+             Hopkins University. The population and demographic data used comes
+             from the United States Department of Agriculture's Economic
+               Research Service."),
              h3("About Me"),
              p("I am a sophomore at Harvard College studying Government. I can be
            reached at jaspergoodman@college.harvard.edu. You can find my code
