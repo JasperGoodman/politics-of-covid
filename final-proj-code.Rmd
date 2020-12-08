@@ -39,10 +39,13 @@ polls <- read_csv("data/presidential-polls.csv", col_types = cols(
  # select(end_date, state, poll_id, candidate_name, candidate_party, pct) %>%
   rename(date = end_date) %>%
   mutate(date = mdy(date))
-polls
 
-view(polls)
+# Above, I used library(lubridate) to match the dates up so that I could join
+# the data and have the dates match
 
+# Below is all the data used for the polling graphs that I include in the app.
+# Each state's COVID numbers came from a separate dataset from the COVID
+# Tracking Project.
 
 covid_states <- read_csv("data/us-states-covid.csv", col_types = cols(
   date = col_date(format = ""),
@@ -80,7 +83,7 @@ covid_wisconsin <- read_csv("data/wisconsin-history.csv", col_types = cols(
   select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
 
-view(covid_wisconsin)
+# I then use right_join() to join the polling data with the covid data.
 
 wisconsin_covid_polls <- polls %>%
   filter(state == "Wisconsin") %>%
@@ -91,8 +94,14 @@ view(wisconsin_covid_polls)
 
 ```
 
-```{r wisconsin}
+```{r wisconsin-covid-polls}
+
 wisconsin_covid_polls %>%
+  
+# I created a graph with cumulative cases on the X and polling data on the Y. I
+# used a version of this graph for every state that I calculated polling data
+# for.
+  
   filter(candidate_party == c("DEM", "REP")) %>%
   ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
   geom_point() +
@@ -100,6 +109,10 @@ wisconsin_covid_polls %>%
   scale_color_manual(values = c("blue", "red"),
                      labels = c("Biden", "Trump"),
                     name = "Candidate") +
+  
+# With scale_color_manual(), I set the labels to show each candidate in red and
+# blue.
+  
   theme_minimal() +
   labs(title = "COVID's Correlation with Presidential Polling in Wisconsin",
        x = "Cases",
@@ -131,9 +144,14 @@ covid_michigan <- read_csv("data/michigan-history.csv", col_types = cols(
   select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
 
+# I followed the same process here for Michigan, joining the data by date with
+# right_join().
+
 michigan_covid_polls <- polls %>%
   filter(state == "Michigan") %>%
   right_join(covid_michigan, by = "date")
+
+# I then replicated the graph for Michigan.
 
 michigan_covid_polls %>%
   filter(candidate_party == c("DEM", "REP")) %>%
@@ -173,6 +191,8 @@ covid_pennsylvania <- read_csv("data/pennsylvania-history.csv", col_types = cols
 )) %>%
   select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
+
+# I then followed the same process for Pennsylvania.
 
 pennsylvania_covid_polls <- polls %>%
   filter(state == "Pennsylvania") %>%
@@ -217,6 +237,8 @@ covid_arizona <- read_csv("data/arizona-history.csv", col_types = cols(
   select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
 
+# And the same process for Arizona.
+
 arizona_covid_polls <- polls %>%
   filter(state == "Arizona") %>%
   right_join(covid_arizona, by = "date")
@@ -257,6 +279,8 @@ covid_georgia <- read_csv("data/georgia-history.csv", col_types = cols(
 )) %>%
   select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
+
+# I then did the same for Georgia, which had less polling data.
 
 georgia_covid_polls <- polls %>%
   filter(state == "Georgia") %>%
@@ -300,12 +324,20 @@ covid_national <- read_csv("data/national-history.csv", col_types = cols(
   select(date, death, deathIncrease, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
 
+# I also followed the same process with national polling data and national COVID
+# rates.
+
 national_covid_polls <- polls %>%
   right_join(covid_national, by = "date")
 
 national_covid_polls %>%
   filter(candidate_party == c("DEM", "REP")) %>%
     filter(fte_grade == c("A+", "A", "A-", "B+", "B")) %>%
+  
+# Because there was so much national polling data, I had to use only some of it.
+# Luckily, FiveThirtyEight grades all polls. So I selected only the top-rated
+# polls, per their grading.
+  
   ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
   geom_point() +
   geom_smooth() +
@@ -334,6 +366,8 @@ covid_county <- read_csv("data/us-counties-covid.csv", col_types = cols(
   probable_deaths = col_double()
 ))
 
+# Now I start getting into the data cleaning for presidential results, which was
+# the most time-consuming part of the project.
 
 results <- read_csv("data/presidential-results.csv", col_types = cols(
   .default = col_double(),
@@ -364,6 +398,9 @@ results <- read_csv("data/presidential-results.csv", col_types = cols(
   rename(biden_votes = results_bidenj) %>%
   rename(trump_votes = results_trumpd)
 
+# I renamed a few variables in the results dataset so they would be easier to
+# understand
+
 pop <- read_csv("data/PopulationEstimates.csv", col_types = cols(
   .default = col_number(),
   FIPStxt = col_double(),
@@ -393,7 +430,8 @@ pop <- read_csv("data/PopulationEstimates.csv", col_types = cols(
   rename(rucc = `Rural-urban_Continuum Code_2013`) %>%
   select(fips, population, rucc)
 
-view(pop)
+# RUCC was much easier than a column name with spaces. It is a measure by the
+# USDA's ERS of how rural a given county is.
 
 education <- read_csv("data/Education.csv", col_types = cols(
   .default = col_double(),
@@ -423,6 +461,9 @@ education <- read_csv("data/Education.csv", col_types = cols(
   rename(pct_degree = `Percent of adults with a bachelor's degree or higher, 2014-18`) %>%
   select(fips, pct_degree)
 
+# I had to ensure that all of the fips columns were called "fips" so that they
+# could be joined successfully.
+
 poverty <- read_csv("data/PovertyEstimates.csv", col_types = cols(
   .default = col_double(),
   FIPStxt = col_double(),
@@ -445,8 +486,8 @@ poverty <- read_csv("data/PovertyEstimates.csv", col_types = cols(
   CI90UB04_2018 = col_number()
 )) %>%
   rename(fips = FIPStxt)
-view(poverty)
 
+# I didn't end up using the poverty data much, but it was interesting.
 
 unemployment <- read_csv("data/Unemployment.csv", col_types = cols(
   .default = col_number(),
@@ -476,8 +517,8 @@ unemployment <- read_csv("data/Unemployment.csv", col_types = cols(
   mutate(unemployment_rate_chg_2000_2019 = Unemployment_rate_2019 - Unemployment_rate_2000) %>%
   select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019, Unemployment_rate_2000, fips, Median_Household_Income_2018, Med_HH_Income_Percent_of_State_Total_2018)
 
-view(unemployment)
-  
+# I mutated in order to get the change in unemployment rate between 2000 and
+# 2019.
 
 results_2016 <- read_csv("data/tidy_data.csv", col_types = cols(
   .default = col_double(),
@@ -509,6 +550,9 @@ results_2016 <- read_csv("data/tidy_data.csv", col_types = cols(
   mutate(trump_pct_16 = trump_pct_16 * 100) %>%
   mutate(clinton_pct_16 = clinton_pct_16 * 100)
 
+# Here, I brought in results from the 2016 election on the county level. These
+# were shockingly hard to get. I mutated to get the Trump and Clinton percent
+# columns out of decimal form and renamed several columns.
 
 covid_results <- results %>%
   right_join(covid_county, by = "fips") %>%
@@ -528,28 +572,35 @@ covid_results <- results %>%
   mutate(cases_per_10000 = cases / (population / 10000)) %>%
   mutate(deaths_per_100000 = deaths / (population / 100000))
 
+# Here is the big join. I used right_join() to bring in all of the data that I
+# loaded up above. I then created columns to indicate when a county is a flipped
+# county, to show the candidates percentages, the difference in there vote share
+# from '16 to '20, a cases per capita column, a cases per 10000 residents
+# column, and a deaths per 100,000 residents column (along with a few others
+# that didn't get used much).
 
 view(covid_results)
 
 ```
 
 
-```{r}
+```{r model}
 
-help <- covid_results %>%
-  filter(state.x == "vermont")
+# Here is my model. I regressed cases_per_capita, rucc, and pct_degree on
+# trump_pct_dif_16_20. I used as.factor() around RUCC in order to assess each
+# code separately.
 
 fit <- stan_glm(formula = trump_pct_dif_16_20 ~ cases_per_capita + as.factor(rucc) + pct_degree,
                   data = covid_results,
                   refresh = 0)
 fit
 
-
-#  select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019, Unemployment_rate_2000, fips, Median_Household_Income_2018, Med_HH_Income_Percent_of_State_Total_2018)
-
 ```
 
-```{r}
+```{r model-gt}
+
+# Here, I used as_gt() to create a table for my model that went in the Shiny
+# app.
 
        tbl_regression(fit, intercept = TRUE) %>% 
             as_gt() %>%
@@ -561,9 +612,14 @@ fit
 ```{r}
 
 covid_results %>%
-#  filter(state.y == "XXX") %>%
+  
+# Here, I made a graph to put into the app. I have filter(state.y == "vermont")
+# in this code, but that is just a placeholder. In the app, that is reactive to
+# whatever is selected in a sidebar panel.
+  
+  filter(state.y == "vermont") %>%
   ggplot(mapping = aes(x = cases_per_10000,
-                       y = biden_pct_dif_16_20, size = population,
+                       y = biden_pct, size = population,
                        color = leader_party_id)) +
   scale_color_manual(breaks = c("democrat", "republican"),
                                  values = c("blue", "red"),
@@ -573,36 +629,31 @@ covid_results %>%
   theme_classic() +
   labs(title = "COVID-19 Case Rates vs. XXX",
        x = "Cases Per 1,000 Residents by County",
-       y = "XXX")
-
+       y = "Change in Trump Support from 2016")
 
 ```
 
-```{r}
-covid_results %>%
-  ggplot(mapping = aes(x = cases_per_10000,
-                       y = XXX, size = population,
-                       color = leader_party_id)) +
-  scale_color_manual(breaks = c("democrat", "republican"),
-                                 values = c("blue", "red"),
-                      name = "County Winner",
-                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
-  geom_jitter() +
-  theme_classic() +
-  labs(title = "COVID-19 Case Rates vs. XXX",
-       x = "Cases Per 1,000 Residents by County",
-       y = "")
-```
 
+```{r results-map}
 
-```{r}
+# This code is for the county-level election map that I made. I used plot_usmap.
 
   plot_usmap(regions = "counties", values = "leader_party_id", data = covid_results, 
              exclude = "AK") +
+  
+# I excluded Alaska because they don't have counties. I set regions equal to
+# counties so it would be a county-level map. The values were set equal to
+# leader_party_id, which is in the original results dataset and signifies who
+# won a given county.
+  
     scale_fill_manual(breaks = c("democrat", "republican"),
                                  values = c("blue", "red"),
                       name = "Winner",
                       labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+      
+# I used the same scale_fill_manual() as in the plots above (with a different
+# name, of course) so that the colors would be consistent throughout.
+  
     labs(title = "2020 United States Presidential Election Results by County",
          caption = "Source: The New York Times \n * Denotes Projected Winner")
   
@@ -611,13 +662,19 @@ covid_results %>%
 ```{r}
 map_tibble <- covid_results %>%
   mutate(cases1 = log(cases_per_10000 + 1))
-  
+
+# I also used plot_usmap() to create a map of COVID cases rates, also on the
+# county level. I used log(cases + 1) and assigned it to map_tibble, which is
+# inputted below
   
   plot_usmap(regions = "counties", values = "cases1", data = map_tibble, 
              exclude = "AK") +
   scale_fill_viridis_c(option = "C") +
     labs(title = "United States COVID-19 Cases by County",
          caption = "Source: COVID Tracking Project") +
+    
+# I tried forever to use scale functions to fix this legend, but it didn't work.
+    
     scale_color_manual(breaks = c(7, 5, 3),
                           labels = c("1500", "1000", "500"),
       name = "COVID Cases Per 10,000 by County")
@@ -625,9 +682,23 @@ map_tibble <- covid_results %>%
 ```
 
 ```{r}
+
+# I created a plot to look at the counties where Democrats gained the most
+# ground. This one is not interactive in the app.
+
 covid_results %>%
+  
+# For some reason to look at counties where the Democrats gained a lot, I had to
+# use desc() and not the other way around. I couldn't figure out why, but I
+# checked to make sure the numbers were right and that's the way it needed to
+# be.
+  
   arrange(desc(biden_pct_dif_16_20)) %>%
   slice(1:80) %>%
+  
+# I sliced to look at the 80 counties where the Democrats gained the most vote
+# share.
+  
  ggplot(mapping = aes(x = cases_per_10000,
                        y = biden_pct_dif_16_20, size = population,
                        color = leader_party_id)) +
@@ -643,6 +714,8 @@ covid_results %>%
        y = "Difference in Vote Share from 2016")
 
 
+
+# I then created a very similar plot to look at counties that Joe Biden flipped.
 
 covid_results %>%
   filter(biden_flip == TRUE) %>%
@@ -667,5 +740,59 @@ covid_results %>%
   #arrange(desc(trump_pct_dif_16_20)) %>%
   #slice(1:30)
 
+```
+
+```{r}
+
+# I created a plot to look at the counties where Democrats gained the most
+# ground. This one is not interactive in the app.
+
+covid_results %>%
+  
+# For some reason to look at counties where the Democrats gained a lot, I had to
+# use desc() and not the other way around. I couldn't figure out why, but I
+# checked to make sure the numbers were right and that's the way it needed to
+# be.
+  
+  arrange(desc(trump_pct_dif_16_20)) %>%
+  slice(1:80) %>%
+  
+# I sliced to look at the 80 counties where the Democrats gained the most vote
+# share.
+  
+ ggplot(mapping = aes(x = cases_per_10000,
+                       y = trump_pct_dif_16_20, size = population,
+                       color = leader_party_id)) +
+  scale_color_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "County Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+  geom_jitter() +
+  theme_classic() +
+  labs(title = "COVID-19 Case Rates vs. Trump Gain",
+       subtitle = "Among the 30 Where Trump Gained the Largest Vote Share",
+       x = "Cases Per 10,000 Residents by County",
+       y = "Difference in Trump Vote Share from 2016")
+
+
+# I then created a very similar plot to look at counties that Donald Trump
+# flipped.
+
+covid_results %>%
+  filter(trump_flip == TRUE) %>%
+   ggplot(mapping = aes(x = cases_per_10000,
+                       y = biden_pct_dif_16_20, size = population,
+                       color = leader_party_id)) +
+  scale_color_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "County Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+  geom_jitter() +
+  theme_classic() +
+  labs(title = "COVID-19 Case Rates vs. Trump Gain",
+       subtitle = "Among Counties Flipped by Trump",
+       x = "Cases Per 10,000 Residents by County",
+       y = "Difference in Vote Share from 2016")
+  
 ```
 

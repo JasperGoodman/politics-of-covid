@@ -16,7 +16,6 @@ library(broom.mixed)
 library(gt)
 library(usmap)
 
-# This is just a normal object
 
 polls <- read_csv("data/presidential-polls.csv", col_types = cols(
   .default = col_character(),
@@ -43,7 +42,12 @@ polls <- read_csv("data/presidential-polls.csv", col_types = cols(
   rename(date = end_date) %>%
   mutate(date = mdy(date))
 
+# Above, I used library(lubridate) to match the dates up so that I could join
+# the data and have the dates match
 
+# Below is all the data used for the polling graphs that I include in the app.
+# Each state's COVID numbers came from a separate dataset from the COVID
+# Tracking Project.
 
 covid_states <- read_csv("data/us-states-covid.csv", col_types = cols(
   date = col_date(format = ""),
@@ -81,7 +85,6 @@ covid_wisconsin <- read_csv("data/wisconsin-history.csv", col_types = cols(
   select(date, death, deathIncrease, hospitalized, hospitalizedCumulative,
          hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
-# Make change to your dataset
 
 wisconsin_covid_polls <- polls %>%
   filter(state == "Wisconsin") %>%
@@ -134,8 +137,13 @@ covid_pennsylvania <- read_csv("data/pennsylvania-history.csv",
                                  totalTestsPeopleAntibody = col_logical(),
                                  totalTestsPeopleAntigen = col_logical()
                                )) %>%
-  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative, hospitalizedIncrease, positive, positiveIncrease) %>%
+  select(date, death, deathIncrease, hospitalized, hospitalizedCumulative,
+         hospitalizedIncrease, positive, positiveIncrease) %>%
   mutate(date = ymd(date))
+
+
+# I individually joined each state's COVID numbers with the polling data with
+# right_join
 
 pennsylvania_covid_polls <- polls %>%
   filter(state == "Pennsylvania") %>%
@@ -195,6 +203,9 @@ georgia_covid_polls <- polls %>%
   filter(state == "Georgia") %>%
   right_join(covid_georgia, by = "date")
 
+
+# I also did this with national data.
+
 covid_national <- read_csv("data/national-history.csv", col_types = cols(
   .default = col_double(),
   date = col_date(format = ""),
@@ -234,6 +245,8 @@ covid_county <- read_csv("data/us-counties-covid.csv", col_types = cols(
   probable_deaths = col_double()
 ))
 
+# Now I start getting into the data cleaning for presidential results, which was
+# the most time-consuming part of the project.
 
 results <- read_csv("data/presidential-results.csv", col_types = cols(
   .default = col_double(),
@@ -260,9 +273,14 @@ results <- read_csv("data/presidential-results.csv", col_types = cols(
   # ... with 36 more columns)
 )) %>%
   rename(county = name) %>%
-  select(fips, county, votes, absentee_votes, results_trumpd, results_bidenj, results_absentee_trumpd, results_absentee_bidenj, leader_party_id, leader_margin_display, margin2020, margin2016, votes2016, state) %>%
+  select(fips, county, votes, absentee_votes, results_trumpd, results_bidenj,
+         results_absentee_trumpd, results_absentee_bidenj, leader_party_id,
+         leader_margin_display, margin2020, margin2016, votes2016, state) %>%
   rename(biden_votes = results_bidenj) %>%
   rename(trump_votes = results_trumpd)
+
+# I renamed a few variables in the results dataset so they would be easier to
+# understand
 
 pop <- read_csv("data/PopulationEstimates.csv", col_types = cols(
   .default = col_number(),
@@ -293,6 +311,8 @@ pop <- read_csv("data/PopulationEstimates.csv", col_types = cols(
   rename(rucc = `Rural-urban_Continuum Code_2013`) %>%
   select(fips, population, rucc)
 
+# RUCC was much easier than a column name with spaces. It is a measure by the
+# USDA's ERS of how rural a given county is.
 
 education <- read_csv("data/Education.csv", col_types = cols(
   .default = col_double(),
@@ -321,6 +341,9 @@ education <- read_csv("data/Education.csv", col_types = cols(
   rename(fips = `FIPS Code`) %>%
   rename(pct_degree = `Percent of adults with a bachelor's degree or higher, 2014-18`) %>%
   select(fips, pct_degree)
+
+# I had to ensure that all of the fips columns were called "fips" so that they
+# could be joined successfully.
 
 poverty <- read_csv("data/PovertyEstimates.csv", col_types = cols(
   .default = col_double(),
@@ -372,9 +395,12 @@ unemployment <- read_csv("data/Unemployment.csv", col_types = cols(
 )) %>%
   rename(fips = FIPStxt) %>%
   mutate(unemployment_rate_chg_2000_2019 = Unemployment_rate_2019 - Unemployment_rate_2000) %>%
-  select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019, Unemployment_rate_2000, fips, Median_Household_Income_2018, Med_HH_Income_Percent_of_State_Total_2018)
+  select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019,
+         Unemployment_rate_2000, fips, Median_Household_Income_2018,
+         Med_HH_Income_Percent_of_State_Total_2018)
 
-
+# I mutated in order to get the change in unemployment rate between 2000 and
+# 2019.
 
 results_2016 <- read_csv("data/tidy_data.csv", col_types = cols(
   .default = col_double(),
@@ -398,7 +424,9 @@ results_2016 <- read_csv("data/tidy_data.csv", col_types = cols(
   precip_bins = col_character(),
   elevation_bins = col_character()
 )) %>%
-  select(fips, votes, votes16_trumpd, votes16_clintonh, rep16_frac, dem16_frac, dem08, rep08, dem08_frac, rep08_frac, dem12, rep12, dem12_frac, rep12_frac) %>%
+  select(fips, votes, votes16_trumpd, votes16_clintonh, rep16_frac, dem16_frac,
+         dem08, rep08, dem08_frac, rep08_frac, dem12, rep12, dem12_frac,
+         rep12_frac) %>%
   rename(trump_votes_16 = votes16_trumpd) %>%
   rename(clinton_votes_16 = votes16_clintonh) %>%
   rename(trump_pct_16 = rep16_frac) %>%
@@ -406,6 +434,9 @@ results_2016 <- read_csv("data/tidy_data.csv", col_types = cols(
   mutate(trump_pct_16 = trump_pct_16 * 100) %>%
   mutate(clinton_pct_16 = clinton_pct_16 * 100)
 
+# Here, I brought in results from the 2016 election on the county level. These
+# were shockingly hard to get. I mutated to get the Trump and Clinton percent
+# columns out of decimal form and renamed several columns.
 
 covid_results <- results %>%
   right_join(covid_county, by = "fips") %>%
@@ -425,15 +456,27 @@ covid_results <- results %>%
   mutate(cases_per_10000 = cases / (population / 10000)) %>%
   mutate(deaths_per_100000 = deaths / (population / 100000))
 
-regression <- tibble(tibble(Coefficient = 32.5,
-                            Intercept = 2.5))
+# Here is the big join. I used right_join() to bring in all of the data that I
+# loaded up above. I then created columns to indicate when a county is a flipped
+# county, to show the candidates percentages, the difference in there vote share
+# from '16 to '20, a cases per capita column, a cases per 10000 residents
+# column, and a deaths per 100,000 residents column (along with a few others
+# that didn't get used much).
 
 map_tibble <- covid_results %>%
   mutate(cases1 = log(cases_per_10000 + 1))
 
-# Define UI for application that draws a histogram
+# I created a tibble that I later plug into a map here. I used
+# log(cases_per_10000 + 1) so differences could more easily be seen across
+# counties.
+
+# I then defined a UI for my app!
 
 ui <- fluidPage(
+  
+# First, I created a page explaining the scope of the project that can welcome
+# visitors.
+  
   navbarPage(
     "The Presidential Politics of COVID-19",
     tabPanel("Introduction",
@@ -446,9 +489,9 @@ ui <- fluidPage(
              virus’ effect on the race. First, it shows how the virus’
              trajectory compared to the trajectory of the two candidates,
              Joseph R. Biden Jr. — the projected winner — and incumbent
-             President Donald J. Trump. It will then explore how the virus
-             interrupted the race in a structural sense by looking at absentee
-             voting rates and their electoral implications."),
+             President Donald J. Trump. It will then explore how the race's 
+               results compared to the virus' spread on a county-by-county
+               basis."),
              p("The models presented in this project are predictive, and causal
              inferences should not be drawn from the data in the project.
              Voting data, via The New York Times, up to date as of November 24,
@@ -456,21 +499,26 @@ ui <- fluidPage(
              Tracking Project. Population data included in the project are from
              the U.S. Department of Agriculture’s Economic Research Service."),
              
+# Below, I print out the maps that I created.
+             
              mainPanel(plotOutput("county_potus_results")),
              mainPanel(plotOutput("covid_map"))),
+
+# My second tab is where most of my graphs are, and where most of the analysis
+# is done.
     
-    tabPanel("Trump vs. COVID",
+    tabPanel("The Candidates vs. COVID",
              titlePanel("How The Virus Affected Electoral Performance"),
              
              # Sidebar with a slider input for number of bins 
              sidebarLayout(
                sidebarPanel(
-                 radioButtons("variable",
-                             "Select Y Variable:",
-                             c("Change in Trump's Vote Share Since 2016",
-                               "Change in the Democratic Vote Share Since 2016",
-                               "Trump Vote Share 2020",
-                               "Biden Vote Share 2020")),
+                 
+                 
+# The second thing I did was use a select input to allow users to select the
+# state they want to see. Differences across states are the most interesting
+# part.
+                 
                selectInput("state1",
                            "Select State:",
                            c("Alabama", "Alaska", 
@@ -490,22 +538,44 @@ ui <- fluidPage(
                              "South Dakota", "Tennessee", "Texas", "Utah",
                              "Vermont",
                              "Virginia", "Washington", "West Virginia",
-                             "Wisconsin", "Wyoming"))),
+                             "Wisconsin", "Wyoming")),
                
-               # Show a plot of the generated distribution
+# I first created a radio button that users can select the Y variable they are
+# most interested in with. Unfortunately, the labels on the Y axes became
+# slightly messed up and it removed the data labels from the graphs. But it is
+# working! I thought it was most valuable to have users be able to select a
+# variable so they could make comparisons for themselves.
+               
+               radioButtons("variable",
+                            "Select Y Variable for National Graph:",
+                            c("Change in Trump's Vote Share Since 2016",
+                              "Change in the Democratic Vote Share Since 2016",
+                              "Trump Vote Share 2020",
+                              "Biden Vote Share 2020"))),
+               
+# Below is where I finally print out my plots!
                
                mainPanel(plotOutput("support_v_covid"),
+                         p("On both the national and state levels, case rates
+                           are not correlated with outcomes. Despite the
+                           widespread view among pundits in the media that
+                           Trump was badly damaged by the virus, data shows that
+                           his margis did not suffer in areas hit harder by the
+                           virus."),
                          plotOutput("support_v_covid_national"),
-                         p("Explination"),
-                         plotOutput("support_v_covid_topbiden"))
+                         p("In counties where Joe Biden made the most signifigant
+                           gains compared to Hillary Clinton's performance in 
+                           the 2016 election, there appears to be more of a
+                           weak positive correlation between Biden's gains and
+                           the virus' spread."),
+                         plotOutput("support_v_covid_topbiden"),
+                         p("In counties that Biden flipped, there is little
+                           correlation to the virus' spread."),
+                         plotOutput("biden_flips"))
     )),
     
     tabPanel("COVID-Polling Correlation",
              titlePanel("COVID-Polling Correlation"),
-             
-             
-             
-             # Sidebar with a slider input for number of bins 
              sidebarLayout(
                sidebarPanel(
                  selectInput("state",
@@ -516,27 +586,37 @@ ui <- fluidPage(
                # Show a plot of the generated distribution
                
                mainPanel(plotOutput("distPlot"),
+                         p("Similarly, on both the national and state levels,
+                           there does not appear to be a correlation between
+                           polling data and cumulative cases."),
                          plotOutput("national_polls_covid"))
              )
     ),
     
     tabPanel("Model",
-             titlePanel("Trump Support is Positively Correlated with COVID-19 Case Rates"),
+             
+# I then included my regression model, which is explained below.
+             
+             titlePanel("Trump Support is Positively Correlated with COVID-19
+                        Case Rates"),
              p("The idea for this model came from the paper, 'The COVID-19 
              Pandemic and the 2020 U.S. Presidential Election', published by IZA
              Institute of Labor Economics. I sought to create a model that used 
-             per capita COVID-19 rates to predict change Trump support from 2016,
-             while controlling for relevant demographic variables. I felt that 
-               measuring change in Trump's support from 2016 would be more telling
-               than smiply looking at support for Trump in 2020, although the
-               correlations are similar."),
+             per capita COVID-19 rates to predict change Trump support from 
+             2016, while controlling for relevant demographic variables. I felt
+             that measuring change in Trump's support from 2016 would be more 
+             telling than smiply looking at support for Trump in 2020,
+               although the correlations are similar."),
              
+# I used gt_output to include the model here.
+
              gt_output(outputId = "regression_model"),
-             
+
              p("The model predicts that Trump's support will increase with an
                increase in COVID-19 cases. The model predicts that Trump will 
-               see an average increase in support of 2.6% for every increase of
-               1 case per capita. Additionally, the model clearly shows an 
+               see an average increase in support of 7.8% for every increase of
+               1 case per capita. The 95% confidence interval falls between 2.6%
+               and 13%. Additionally, the model clearly shows an 
                increase as the Rural-Urban Continuum Code increases. In other 
                words, the more rural a given county is per the ERS's metric,
                the more positive the change in Trump support is likely to be.
@@ -546,39 +626,55 @@ ui <- fluidPage(
     ),
     tabPanel("About",
              titlePanel("About"),
-             h3("Goals"),
+             
+# And, finally, here is my about page!
+             
+             h3("Goals & Data"),
              p("The aim of this project is to prive a framework for understanding
-           how COVID-19 impacted the result of the 2020 election. In the days 
-           before the project is officially due, I hope to accomplish several
-           major changes. First off, I hope to create a model and graphics that
-           incorporate results, creating a regression model that compares
-           support for the given candidates and case rates and/or death rates.
-           Additionally, I provide further graphics and data on the page
-           looking at absentee voting. For instance, I plan to illustrate just
-           how large the increase in absentee voting, and to analyze how
-           mail-in voting affected turnout."),
+           how COVID-19 impacted the result of the 2020 election. The election 
+           data used in the project comes from The New York Times. The COVID-19
+               data comes from The New York Times, the COVID Tracking Project by
+               The Atlantic, and John's Hopkins University. The population and
+               demographic data used comes from the United States Department of
+               Agriculture's Economic Research Service."),
              h3("About Me"),
              p("I am a sophomore at Harvard College studying Government. I can be
            reached at jaspergoodman@college.harvard.edu. You can find my code
-           on my GitHub account."))
+           on my", a("GitHub account.", 
+           href = "https://github.com/JasperGoodman")))
+
   )
 )
 
+# Below is my server, where the magic is made.
 
-
-# Define server logic required to draw a histogram
 server <- function(input, output) {
+  
+# For the polling plots, I had to use if() functions and create them all
+# separately because they all use different datasets. I suppose I could have
+# joined them all into one large dataset, which probably would have been more
+# efficient. But, hey, this worked.
   
   output$distPlot <- renderPlot({
     if(input$state == "Pennsylvania"){
       Out <- pennsylvania_covid_polls %>%
+        
+# I assigned all the plots to an object called Out, which I print at the end.
+        
         filter(candidate_party == c("DEM", "REP")) %>%
+        
+# I wanted to look at only Biden and Trump so I filtered for c("DEM", "REP").
+        
         ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
         geom_point() +
         geom_smooth() +
         scale_color_manual(values = c("blue", "red"),
                            labels = c("Biden", "Trump"),
                            name = "Candidate") +
+        
+# I used scale_color_manual to make the legend work, and used red and blue as
+# the colors for each candidate, which has been consistent throughout.
+        
         theme_minimal() +
         labs(title = "COVID's Correlation with Presidential Polling in Pennsylvania",
              x = "Cases",
@@ -586,6 +682,10 @@ server <- function(input, output) {
     }
     
     if(input$state=="Arizona"){
+      
+# I then did the same exact thing for all of the 5 swing states that flipped
+# blue -- Michigan, Pennsylvania, Wisconsin, Arizona, and Georgia.
+      
       Out <- arizona_covid_polls %>%
         filter(candidate_party == c("DEM", "REP")) %>%
         ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
@@ -644,13 +744,23 @@ server <- function(input, output) {
              x = "Cases",
              y = "Polling Percentage")
     }
+    
+# I printed out the object Out at the end to display the plot.
+    
     Out
   })
+  
+# I then did the exact thing with national polling data.
   
   output$national_polls_covid <- renderPlot({
     national_covid_polls %>%
       filter(candidate_party == c("DEM", "REP")) %>%
       filter(fte_grade == c("B", "B+", "A-", "A", "A+")) %>%
+      
+# Because there was so much national polling data, I had to use only some of it.
+# Luckily, FiveThirtyEight grades all polls. So I selected only the top-rated
+# polls, per their grading.
+      
       ggplot(mapping = aes(x = positive, y = pct, color = candidate_party)) +
       geom_point() +
       geom_smooth() +
@@ -666,19 +776,36 @@ server <- function(input, output) {
   
   output$regression_model <- render_gt({
     
+# This output is for my model. I used as_gt() to create the regression table.
+    
     tbl_regression(fit, intercept = TRUE) %>% 
       as_gt() %>%
-      tab_header(title = "Regression of Change in County-Level Trump Vote Share by COVID-19 Cases Per Capita, Rural-Urban Continum Code, and Percentage of Residents with a College Degree")
+      tab_header(title = "Regression of Change in County-Level Trump Vote Share by COVID-19 Cases Per Capita, Rural-Urban Continuum Code, and Percentage of Residents with a College Degree")
     
   })
   
   output$county_potus_results <- renderPlot({
-    plot_usmap(regions = "counties", values = "leader_party_id", data = covid_results, 
+    
+# This output is for the county-level election map that I made. I used
+# plot_usmap.
+    
+    plot_usmap(regions = "counties", values = "leader_party_id",
+               data = covid_results, 
                exclude = "AK") +
+      
+# I excluded Alaska because they don't have counties. I set regions equal to
+# counties so it would be a county-level map. The values were set equal to
+# leader_party_id, which is in the original results dataset and signifies who
+# won a given county.
+      
       scale_fill_manual(breaks = c("democrat", "republican"),
                         values = c("blue", "red"),
                         name = "Winner",
                         labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+      
+# I used the same scale_fill_manual() as in the plots above (with a different
+# name, of course) so that the colors would be consistent throughout.
+      
       labs(title = "2020 United States Presidential Election Results by County",
            caption = "Source: The New York Times \n * Denotes Projected Winner")
   
@@ -686,12 +813,18 @@ server <- function(input, output) {
   
     output$covid_map <- renderPlot({
       
+# I also used plot_usmap() to create a map of COVID cases rates, also on the
+# county level. Way up at the top I used log(cases + 1) and assigned it to
+# map_tibble, which is inputted here.
     
     plot_usmap(regions = "counties", values = "cases1", data = map_tibble, 
                exclude = "AK") +
       scale_fill_viridis_c(option = "C") +
-      labs(title = "United States COVID-19 Cases by County",
+      labs(title = "United States COVID-19 Cases Per 10,000 by County",
            caption = "Source: COVID Tracking Project") +
+        
+# I tried forever to use scale functions to fix this legend, but it didn't work.
+        
       scale_color_manual(breaks = c(7, 5, 3),
                          labels = c("1500", "1000", "500"),
                          name = "COVID Cases Per 10,000 by County") +
@@ -700,18 +833,15 @@ server <- function(input, output) {
   })
   
   output$support_v_covid <- renderPlot({
-    
-    data <- switch(input$variable,
-                   "Change in Trump's Vote Share Since 2016" = covid_results$trump_pct_dif_16_20,
-                   "Change in the Democratic Vote Share Since 2016" = covid_results$biden_pct_dif_16_20,
-                   "Trump Vote Share 2020" = covid_results$trump_pct,
-                   "Biden Vote Share 2020" = covid_results$biden_pct)
-
                    
-  covid_results %>%
+covid_results %>%
     filter(state.y == input$state1) %>%
+      
+# I had the graph filter to look at the state being selected in the sidebar
+# panel.
+      
     ggplot(mapping = aes(x = cases_per_10000,
-                         y = input$variable,
+                         y = trump_pct_dif_16_20,
                          size = population,
                          color = leader_party_id)) +
     scale_color_manual(breaks = c("democrat", "republican"),
@@ -721,12 +851,16 @@ server <- function(input, output) {
     geom_jitter() +
     theme_classic() +
     labs(title = "COVID-19 Case Rates vs. Selected Variable in Selected State",
-         x = "Cases Per 1,000 Residents by County",
-         y = "test")
-    
+         x = "Cases Per 10,000 Residents by County",
+         y = "Change in Trump Support from 2016") +
+  geom_hline(yintercept = 0, col = "darkblue")
+  
   })
   
   output$support_v_covid_national <- renderPlot({
+    
+# Here is where I create the main plots of my app. I use switch() to swap
+# variables with the selection users make on the sidebar panel.
     
   data2 <- switch(input$variable,
                  "Change in Trump's Vote Share Since 2016" = covid_results$trump_pct_dif_16_20,
@@ -734,30 +868,57 @@ server <- function(input, output) {
                  "Trump Vote Share 2020" = covid_results$trump_pct,
                  "Biden Vote Share 2020" = covid_results$biden_pct)
   
+# Above, I set all the things I have on the radio button panel equal to their
+# corresponding variable from the dataset.
   
   covid_results %>%
     ggplot(mapping = aes(x = cases_per_10000,
-                         y = input$variable,
+                         y = data2,
+                         
+# Here I set Y equal to data2, which is created by switch() up above.
+                         
                          size = population,
                          color = leader_party_id)) +
+    
+# I set size equal to population and color equal to leader_party_id.
+    
     scale_color_manual(breaks = c("democrat", "republican"),
                        values = c("blue", "red"),
                        name = "County Winner",
                        labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+    
+# I again used the same scale_color_manual() to keep things consistent.
+    
     geom_jitter() +
     theme_classic() +
     labs(title = "COVID-19 Case Rates vs. Selected Variable",
-         x = "Cases Per 1,000 Residents by County") +
-    geom_hline(yintercept = 50, col = "darkblue")
+         x = "Cases Per 10,000 Residents by County",
+         y = "Selected Variable")
+  
+# I was messing around with geom_hline() for a while, but it didn't do anything
+# on the graph, which was disappointing.
     
     
   })
   
   output$support_v_covid_topbiden <- renderPlot({
     
+# I created a plot to look at the counties where Democrats gained the most
+# ground. This one is not interactive.
+    
   covid_results %>%
+      
+# For some reason to look at counties where the Democrats gained a lot, I had to
+# use desc() and not the other way around. I couldn't figure out why, but I
+# checked to make sure the numbers were right and that's the way it needed to
+# be.
+      
     arrange(desc(biden_pct_dif_16_20)) %>%
     slice(1:80) %>%
+      
+# I sliced to look at the 80 counties where the Democrats gained the most vote
+# share.
+      
     ggplot(mapping = aes(x = cases_per_10000,
                          y = biden_pct_dif_16_20, size = population,
                          color = leader_party_id)) +
@@ -768,7 +929,27 @@ server <- function(input, output) {
     geom_jitter() +
     theme_classic() +
     labs(title = "COVID-19 Case Rates vs. Democratic Gain",
-         subtitle = "Among the 30 Counties Where Democrats Gained the Largest Vote Share",
+         subtitle = "Among the 80 Counties Where Democrats Gained the Largest Vote Share",
+         x = "Cases Per 10,000 Residents by County",
+         y = "Difference in Vote Share from 2016")
+  
+  })
+  
+  output$biden_flips <- renderPlot({
+  
+  covid_results %>%
+    filter(biden_flip == TRUE) %>%
+    ggplot(mapping = aes(x = cases_per_10000,
+                         y = biden_pct_dif_16_20, size = population,
+                         color = leader_party_id)) +
+    scale_color_manual(breaks = c("democrat", "republican"),
+                       values = c("blue", "red"),
+                       name = "County Winner",
+                       labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+    geom_jitter() +
+    theme_classic() +
+    labs(title = "COVID-19 Case Rates vs. Democratic Gain",
+         subtitle = "Among Counties Flipped by Joe Biden",
          x = "Cases Per 10,000 Residents by County",
          y = "Difference in Vote Share from 2016")
   

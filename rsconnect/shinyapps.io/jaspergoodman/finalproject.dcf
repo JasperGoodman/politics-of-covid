@@ -5,8 +5,8 @@ account: jaspergoodman
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3371219
-bundleId: 3959351
+bundleId: 3960662
 url: https://jaspergoodman.shinyapps.io/finalproject/
-when: 1607419062.5313
+when: 1607442813.16759
 asMultiple: FALSE
 asStatic: FALSE
