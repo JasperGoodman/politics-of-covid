@@ -1,0 +1,12 @@
+name: finalproject
+title: finalproject
+username:
+account: jaspergoodman
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3371219
+bundleId: 3959351
+url: https://jaspergoodman.shinyapps.io/finalproject/
+when: 1607419062.5313
+asMultiple: FALSE
+asStatic: FALSE

@@ -8,6 +8,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
 library(rstanarm)
+library(gtsummary)
+library(broom.mixed)
 library(gt)
 library(usmap)
 library(readxl)
@@ -531,27 +533,17 @@ view(covid_results)
 
 ```
 
-```{r}
-
-regression <- tibble(Coefficient = 8.1,
-                     Intercept = 1717.4)
-                     gt(regression)
-
-```
-
-
 
 ```{r}
 
 help <- covid_results %>%
-  filter(state.y == "new york")
+  filter(state.x == "vermont")
 
-stan <- stan_glm(data = covid_results,
-                 formula = trump_pct_dif_16_20 ~ ,
-                 refresh = 0)
-stan
+fit <- stan_glm(formula = trump_pct_dif_16_20 ~ cases_per_capita + as.factor(rucc) + pct_degree,
+                  data = covid_results,
+                  refresh = 0)
+fit
 
-summary(stan)
 
 #  select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019, Unemployment_rate_2000, fips, Median_Household_Income_2018, Med_HH_Income_Percent_of_State_Total_2018)
 
@@ -559,10 +551,19 @@ summary(stan)
 
 ```{r}
 
+       tbl_regression(fit, intercept = TRUE) %>% 
+            as_gt() %>%
+            tab_header(title = "Regression of Change in County-Level Trump Vote Share by COVID-19 Cases Per Capita, Rural-Urban Continum Code, and Percentage of Residents with a College Degree")
+
+```
+
+
+```{r}
+
 covid_results %>%
-  filter(state.y == "XXX") %>%
+#  filter(state.y == "XXX") %>%
   ggplot(mapping = aes(x = cases_per_10000,
-                       y = XXX, size = population,
+                       y = biden_pct_dif_16_20, size = population,
                        color = leader_party_id)) +
   scale_color_manual(breaks = c("democrat", "republican"),
                                  values = c("blue", "red"),
@@ -625,12 +626,46 @@ map_tibble <- covid_results %>%
 
 ```{r}
 covid_results %>%
-  arrange(trump_pct_dif_16_20) %>%
-  slice(1:30)
+  arrange(desc(biden_pct_dif_16_20)) %>%
+  slice(1:80) %>%
+ ggplot(mapping = aes(x = cases_per_10000,
+                       y = biden_pct_dif_16_20, size = population,
+                       color = leader_party_id)) +
+  scale_color_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "County Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+  geom_jitter() +
+  theme_classic() +
+  labs(title = "COVID-19 Case Rates vs. Democratic Gain",
+       subtitle = "Among the 30 Where Democrats Gained the Largest Vote Share",
+       x = "Cases Per 10,000 Residents by County",
+       y = "Difference in Vote Share from 2016")
+
+
 
 covid_results %>%
-  arrange(desc(trump_pct_dif_16_20)) %>%
-  slice(1:30)
+  filter(biden_flip == TRUE) %>%
+   ggplot(mapping = aes(x = cases_per_10000,
+                       y = biden_pct_dif_16_20, size = population,
+                       color = leader_party_id)) +
+  scale_color_manual(breaks = c("democrat", "republican"),
+                                 values = c("blue", "red"),
+                      name = "County Winner",
+                      labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+  geom_jitter() +
+  theme_classic() +
+  labs(title = "COVID-19 Case Rates vs. Democratic Gain",
+       subtitle = "Among Counties Flipped by Joe Biden",
+       x = "Cases Per 10,000 Residents by County",
+       y = "Difference in Vote Share from 2016")
+  
+  
+  
+  
+  
+  #arrange(desc(trump_pct_dif_16_20)) %>%
+  #slice(1:30)
 
 ```
 

@@ -11,6 +11,8 @@ library(shiny)
 library(tidyverse)
 library(lubridate)
 library(shiny)
+library(gtsummary)
+library(broom.mixed)
 library(gt)
 library(usmap)
 
@@ -426,8 +428,8 @@ covid_results <- results %>%
 regression <- tibble(tibble(Coefficient = 32.5,
                             Intercept = 2.5))
 
-map_tibble1 <- covid_results %>%
-  mutate(cases1 = log(cases + 1))
+map_tibble <- covid_results %>%
+  mutate(cases1 = log(cases_per_10000 + 1))
 
 # Define UI for application that draws a histogram
 
@@ -471,7 +473,7 @@ ui <- fluidPage(
                                "Biden Vote Share 2020")),
                selectInput("state1",
                            "Select State:",
-                           c("Alabama", "Alaska", "American Samoa", 
+                           c("Alabama", "Alaska", 
                              "Arizona", 
                              "Arkansas", "California", "Colorado", 
                              "Connecticut", "Delaware", "District of Columbia",
@@ -493,7 +495,9 @@ ui <- fluidPage(
                # Show a plot of the generated distribution
                
                mainPanel(plotOutput("support_v_covid"),
-                         plotOutput("support_v_covid_national"))
+                         plotOutput("support_v_covid_national"),
+                         p("Explination"),
+                         plotOutput("support_v_covid_topbiden"))
     )),
     
     tabPanel("COVID-Polling Correlation",
@@ -516,18 +520,29 @@ ui <- fluidPage(
              )
     ),
     
-    tabPanel("Absentee Voting",
-             titlePanel("Biden Benefited from Absentee Votes"),
-             p("Absentee votes counted in the days following November 3 delivered the 
-  presidency to Joe Biden, pushing him well over 270 electoral votes with 
-  wins in Wisconsin, Michigan, Pennsylvania, Arizona, and Georgia — all 
-  states won by President Trump in 2016. But it wasn’t only in the swing 
-  states that Biden benefitted from absentee votes. There is a positive 
-  correlation between the proportion of absentee votes in a given U.S. county 
-  and Biden’s result. This regression model predicts that for every increase 
-  in the proportion of votes that were absentee in a given county, Biden’s
-  vote share increased by 2.5 percent."),
-             gt_output(outputId = "regression_model")
+    tabPanel("Model",
+             titlePanel("Trump Support is Positively Correlated with COVID-19 Case Rates"),
+             p("The idea for this model came from the paper, 'The COVID-19 
+             Pandemic and the 2020 U.S. Presidential Election', published by IZA
+             Institute of Labor Economics. I sought to create a model that used 
+             per capita COVID-19 rates to predict change Trump support from 2016,
+             while controlling for relevant demographic variables. I felt that 
+               measuring change in Trump's support from 2016 would be more telling
+               than smiply looking at support for Trump in 2020, although the
+               correlations are similar."),
+             
+             gt_output(outputId = "regression_model"),
+             
+             p("The model predicts that Trump's support will increase with an
+               increase in COVID-19 cases. The model predicts that Trump will 
+               see an average increase in support of 2.6% for every increase of
+               1 case per capita. Additionally, the model clearly shows an 
+               increase as the Rural-Urban Continuum Code increases. In other 
+               words, the more rural a given county is per the ERS's metric,
+               the more positive the change in Trump support is likely to be.
+               Trump support is also slightly negatively correlated with
+               education rates, according to the model.")
+             
     ),
     tabPanel("About",
              titlePanel("About"),
@@ -650,16 +665,15 @@ server <- function(input, output) {
   
   
   output$regression_model <- render_gt({
-    gt(regression) %>%
-      tab_header(title = "Linear Regression",              
-                 subtitle = "The Effect of Absentee Voting on Joe Biden's County-Level Vote Share")
+    
+    tbl_regression(fit, intercept = TRUE) %>% 
+      as_gt() %>%
+      tab_header(title = "Regression of Change in County-Level Trump Vote Share by COVID-19 Cases Per Capita, Rural-Urban Continum Code, and Percentage of Residents with a College Degree")
     
   })
   
   output$county_potus_results <- renderPlot({
-    plot_usmap(regions = "counties",
-               values = "leader_party_id",
-               data = map_tibble, 
+    plot_usmap(regions = "counties", values = "leader_party_id", data = covid_results, 
                exclude = "AK") +
       scale_fill_manual(breaks = c("democrat", "republican"),
                         values = c("blue", "red"),
@@ -667,15 +681,21 @@ server <- function(input, output) {
                         labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
       labs(title = "2020 United States Presidential Election Results by County",
            caption = "Source: The New York Times \n * Denotes Projected Winner")
-    
+  
   })
   
-  output$covid_map <- renderPlot({
-    plot_usmap(regions = "counties", values = "cases1", data = map_tibble1, 
+    output$covid_map <- renderPlot({
+      
+    
+    plot_usmap(regions = "counties", values = "cases1", data = map_tibble, 
                exclude = "AK") +
       scale_fill_viridis_c(option = "C") +
       labs(title = "United States COVID-19 Cases by County",
-           caption = "Source: COVID Tracking Project")
+           caption = "Source: COVID Tracking Project") +
+      scale_color_manual(breaks = c(7, 5, 3),
+                         labels = c("1500", "1000", "500"),
+                         name = "COVID Cases Per 10,000 by County") +
+        theme(legend.position = "none")
     
   })
   
@@ -701,8 +721,9 @@ server <- function(input, output) {
     geom_jitter() +
     theme_classic() +
     labs(title = "COVID-19 Case Rates vs. Selected Variable in Selected State",
-         x = "Cases Per 1,000 Residents by County")
-  
+         x = "Cases Per 1,000 Residents by County",
+         y = "test")
+    
   })
   
   output$support_v_covid_national <- renderPlot({
@@ -726,10 +747,32 @@ server <- function(input, output) {
     geom_jitter() +
     theme_classic() +
     labs(title = "COVID-19 Case Rates vs. Selected Variable",
-         x = "Cases Per 1,000 Residents by County")
+         x = "Cases Per 1,000 Residents by County") +
+    geom_hline(yintercept = 50, col = "darkblue")
+    
     
   })
   
+  output$support_v_covid_topbiden <- renderPlot({
+    
+  covid_results %>%
+    arrange(desc(biden_pct_dif_16_20)) %>%
+    slice(1:80) %>%
+    ggplot(mapping = aes(x = cases_per_10000,
+                         y = biden_pct_dif_16_20, size = population,
+                         color = leader_party_id)) +
+    scale_color_manual(breaks = c("democrat", "republican"),
+                       values = c("blue", "red"),
+                       name = "County Winner",
+                       labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
+    geom_jitter() +
+    theme_classic() +
+    labs(title = "COVID-19 Case Rates vs. Democratic Gain",
+         subtitle = "Among the 30 Counties Where Democrats Gained the Largest Vote Share",
+         x = "Cases Per 10,000 Residents by County",
+         y = "Difference in Vote Share from 2016")
+  
+  })
 }
 
 # Run the application 
