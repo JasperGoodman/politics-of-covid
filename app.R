@@ -15,6 +15,8 @@ library(gtsummary)
 library(broom.mixed)
 library(gt)
 library(usmap)
+library(rstanarm)
+
 
 
 polls <- read_csv("data/presidential-polls.csv", col_types = cols(
@@ -339,6 +341,9 @@ education <- read_csv("data/Education.csv", col_types = cols(
   # ... with 2 more columns
 )) %>%
   rename(fips = `FIPS Code`) %>%
+  
+# Line 347 had to go beyond the limit in order to fir the rename().
+  
   rename(pct_degree = `Percent of adults with a bachelor's degree or higher, 2014-18`) %>%
   select(fips, pct_degree)
 
@@ -394,6 +399,9 @@ unemployment <- read_csv("data/Unemployment.csv", col_types = cols(
   # ... with 7 more columns
 )) %>%
   rename(fips = FIPStxt) %>%
+  
+# Line 402 had to go beyond the limit to fit the mutate.
+  
   mutate(unemployment_rate_chg_2000_2019 = Unemployment_rate_2019 - Unemployment_rate_2000) %>%
   select(unemployment_rate_chg_2000_2019, unemployment_rate_chg_2000_2019,
          Unemployment_rate_2000, fips, Median_Household_Income_2018,
@@ -448,6 +456,9 @@ covid_results <- results %>%
   mutate(biden_pct = (biden_votes / votes.x) * 100) %>%
   mutate(trump_pct = (trump_votes / votes.x) * 100) %>%
   mutate(diff = biden_pct - trump_pct) %>%
+  
+# Lines 456-457 had to go beyond the limit in order to fit the mutate.
+  
   mutate(trump_flip = case_when(leader_party_id == "republican" & margin2016 < 0 ~ TRUE, TRUE ~ FALSE)) %>%
   mutate(biden_flip = case_when(leader_party_id == "democrat" & margin2016 > 0 ~ TRUE, TRUE ~ FALSE)) %>%
   mutate(trump_pct_dif_16_20 = trump_pct - trump_pct_16) %>%
@@ -465,6 +476,13 @@ covid_results <- results %>%
 
 map_tibble <- covid_results %>%
   mutate(cases1 = log(cases_per_10000 + 1))
+
+# Below is my model. Line 472 had to go beyond the limit in order to fit the
+# stan_glm
+
+fit <- stan_glm(formula = trump_pct_dif_16_20 ~ cases_per_capita + as.factor(rucc) + pct_degree,
+                data = covid_results,
+                refresh = 0)
 
 # I created a tibble that I later plug into a map here. I used
 # log(cases_per_10000 + 1) so differences could more easily be seen across
@@ -508,7 +526,7 @@ ui <- fluidPage(
 # is done.
     
     tabPanel("The Candidates vs. COVID",
-             titlePanel("How The Virus Affected Electoral Performance"),
+             titlePanel("How The Virus Compares with Electoral Performance"),
              
              # Sidebar with a slider input for number of bins 
              sidebarLayout(
@@ -563,11 +581,11 @@ ui <- fluidPage(
                            his margis did not suffer in areas hit harder by the
                            virus."),
                          plotOutput("support_v_covid_national"),
-                         p("In counties where Joe Biden made the most signifigant
-                           gains compared to Hillary Clinton's performance in 
-                           the 2016 election, there appears to be more of a
-                           weak positive correlation between Biden's gains and
-                           the virus' spread."),
+                         p("In counties where Joe Biden made the most 
+                         signifigant gains compared to Hillary Clinton's 
+                         performance in the 2016 election, there appears to be 
+                         more of a weak positive correlation between Biden's 
+                         gains and the virus' spread."),
                          plotOutput("support_v_covid_topbiden"),
                          p("In counties that Biden flipped, there is little
                            correlation to the virus' spread."),
@@ -607,8 +625,9 @@ ui <- fluidPage(
              demographics controlled for in this model are Rural-Urban Continuum
              Code, a metric from the United States Department of Agriculture's 
              Economic Research Service, as well as percent of residnets with a 
-             college degree."),
-             p("I feltthat measuring change in Trump's support from 2016 would 
+             college degree. The lower a RUCC number is, the more urban a given
+               county is."),
+             p("I felt that measuring change in Trump's support from 2016 would 
              be more telling than smiply looking at support for Trump in 2020,
                although the correlations are similar."),
              
@@ -616,12 +635,15 @@ ui <- fluidPage(
 
              gt_output(outputId = "regression_model"),
 
-             p("The model predicts that Trump's support will increase with an
-               increase in COVID-19 cases. The model predicts that Trump will 
-               see an average increase in support of 7.8% for every increase of
-               1 case per capita. The 95% confidence interval falls between 2.6%
+             p("This Bayesian predicts that change in Trump support will 
+             increase with an increase in COVID-19 cases. The median of a 
+             posterior for the coefficient in the model iis 7.8. In other 
+             words, the model predicts that for every increase of
+               1 case per capita, Trump support will increase by 7.8%. The 95% 
+               confidence interval falls between 2.6%
                and 13%. Additionally, the model clearly shows an 
-               increase as the Rural-Urban Continuum Code increases. In other 
+               increase in change in Trump support as the Rural-Urban Continuum 
+               Code increases. In other 
                words, the more rural a given county is per the ERS's metric,
                the more positive the change in Trump support is likely to be.
                Trump support is also slightly negatively correlated with
@@ -634,7 +656,7 @@ ui <- fluidPage(
 # And, finally, here is my about page!
              
              h3("Goals & Data"),
-             p("The aim of this project is to prive a framework for
+             p("The aim of this project is to provide a framework for
              understanding how COVID-19 impacted the result of the 2020
              election. The election data used in the project comes from 
              The New York Times. The COVID-19 data comes from The New York
@@ -681,6 +703,9 @@ server <- function(input, output) {
 # the colors for each candidate, which has been consistent throughout.
         
         theme_minimal() +
+        
+# Line 709 goes beyond the limit in order to fit the title in labs().
+        
         labs(title = "COVID's Correlation with Presidential Polling in Pennsylvania",
              x = "Cases",
              y = "Polling Percentage")
@@ -715,6 +740,9 @@ server <- function(input, output) {
                            labels = c("Biden", "Trump"),
                            name = "Candidate") +
         theme_minimal() +
+        
+# Line 746 goes beyond the limit in order to fit a title in labs().
+        
         labs(title = "COVID's Correlation with Presidential Polling in Michigan",
              x = "Cases",
              y = "Polling Percentage")
@@ -745,6 +773,10 @@ server <- function(input, output) {
                            labels = c("Biden", "Trump"),
                            name = "Candidate") +
         theme_minimal() +
+        
+# Line 780 goes beyond the limit in order to fit a title in labs().
+        
+        
         labs(title = "COVID's Correlation with Presidential Polling in Wisconsin",
              x = "Cases",
              y = "Polling Percentage")
@@ -785,6 +817,9 @@ server <- function(input, output) {
     
     tbl_regression(fit, intercept = TRUE) %>% 
       as_gt() %>%
+      
+# Line 823 goes beyond the limit in order to fit a title in labs().
+      
       tab_header(title = "Regression of Change in County-Level Trump Vote Share by COVID-19 Cases Per Capita, Rural-Urban Continuum Code, and Percentage of Residents with a College Degree")
     
   })
@@ -854,8 +889,11 @@ covid_results %>%
                        name = "County Winner",
                        labels = c("Joseph R. Biden Jr.*", "Donald J. Trump")) +
     geom_jitter() +
+      
+# Line 896 goes over the limit to get the title in labs().
+      
     theme_classic() +
-    labs(title = "COVID-19 Case Rates vs. Selected Variable in Selected State",
+    labs(title = "COVID-19 Case Rates vs. Change in Trump Support in Selected State",
          x = "Cases Per 10,000 Residents by County",
          y = "Change in Trump Support from 2016") +
   geom_hline(yintercept = 0, col = "darkblue")
@@ -865,7 +903,8 @@ covid_results %>%
   output$support_v_covid_national <- renderPlot({
     
 # Here is where I create the main plots of my app. I use switch() to swap
-# variables with the selection users make on the sidebar panel.
+# variables with the selection users make on the sidebar panel. Lines 905-907 go
+# beyond the limit in order to fit in the switch.
     
   data2 <- switch(input$variable,
                  "Change in Trump's Vote Share Since 2016" = covid_results$trump_pct_dif_16_20,
@@ -934,6 +973,9 @@ covid_results %>%
     geom_jitter() +
     theme_classic() +
     labs(title = "COVID-19 Case Rates vs. Democratic Gain",
+         
+# Line 976 goes beyond the limit in order to fit the subtitle in labs().
+         
          subtitle = "Among the 80 Counties Where Democrats Gained the Largest Vote Share",
          x = "Cases Per 10,000 Residents by County",
          y = "Difference in Vote Share from 2016")
